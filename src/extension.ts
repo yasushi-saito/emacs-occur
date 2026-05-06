@@ -4,6 +4,10 @@ import { getOccurResults } from './occur';
 
 let resultsMap = new Map<string, string>();
 
+// Maps the URI of the occur buffer (`occur://<fspath>/*tmp-occur*`) to 
+// the URI of the original file.
+let occurUriToOrigUriMap = new Map<string, vscode.Uri>();
+
 export function activate(context: vscode.ExtensionContext) {
     const provider = new OccurContentProvider();
     const registration = vscode.workspace.registerTextDocumentContentProvider('occur', provider);
@@ -35,8 +39,12 @@ export function activate(context: vscode.ExtensionContext) {
 
         const originalUri = doc.uri;
         const occurUri = vscode.Uri.parse(`occur://${originalUri.fsPath}/*tmp-occur*`);
+        if (occurUri === undefined) {
+            throw new Error("No buffer found");
+        }
 
         resultsMap.set(occurUri.toString(), results.join('\n'));
+        occurUriToOrigUriMap.set(occurUri.toString(), originalUri);
         provider.update(occurUri);
 
         try {
@@ -64,11 +72,11 @@ export function activate(context: vscode.ExtensionContext) {
 
         const targetLine = parseInt(match[2], 10);
 
-        const occurUri = doc.uri;
-        const originalFilePath = occurUri.path.slice(0, -12); // Remove '/*tmp-occur*'
-        const originalUri = vscode.Uri.file(originalFilePath);
-
         try {
+            const originalUri = occurUriToOrigUriMap.get(doc.uri.toString());
+            if (originalUri === undefined) {
+                throw new Error("No buffer found");
+            }
             const originalDoc = await vscode.workspace.openTextDocument(originalUri);
             const originalEditor = await vscode.window.showTextDocument(originalDoc);
 
@@ -87,6 +95,24 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.commands.executeCommand('setContext', 'emacs-occur.active', true);
         } else {
             vscode.commands.executeCommand('setContext', 'emacs-occur.active', false);
+        }
+    }));
+
+    context.subscriptions.push(vscode.workspace.onDidCloseTextDocument((document: vscode.TextDocument) => {
+        const uriString = document.uri.toString();
+        const urisToDelete: string[] = [uriString];
+
+        // The document may be either the original one, or the occur buffer. In
+        // case it is the original file, find the matching occur buffer.
+        for (const [key, val] of occurUriToOrigUriMap.entries()) {
+          if (val.toString() == uriString) {
+            urisToDelete.push(key);
+          }
+        }        
+
+        for (const key of urisToDelete) {
+          resultsMap.delete(key);
+          occurUriToOrigUriMap.delete(key);
         }
     }));
 }
