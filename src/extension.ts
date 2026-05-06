@@ -30,7 +30,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
 
         const doc = editor.document;
-        const results = getOccurResults(doc.getText(), searchText, path.basename(doc.uri.fsPath));
+        const results = getOccurResults(doc.getText(), searchText);
 
         if (results.length === 0) {
             vscode.window.showInformationMessage('No matches found');
@@ -38,7 +38,8 @@ export function activate(context: vscode.ExtensionContext) {
         }
 
         const originalUri = doc.uri;
-        const occurUri = vscode.Uri.parse(`occur://${originalUri.fsPath}/*tmp-occur*`);
+        const basename = path.basename(doc.uri.fsPath)
+        const occurUri = vscode.Uri.parse(`occur://${originalUri.fsPath}/*occur-${basename}*`);
         if (occurUri === undefined) {
             throw new Error("No buffer found");
         }
@@ -67,10 +68,10 @@ export function activate(context: vscode.ExtensionContext) {
         const position = editor.selection.active;
         const lineText = doc.lineAt(position.line).text;
 
-        const match = lineText.match(/^([^:]+):(\d+):/);
+        const match = lineText.match(/^ *(\d+):/);
         if (!match) return;
 
-        const targetLine = parseInt(match[2], 10);
+        const targetLine = parseInt(match[1], 10);
 
         try {
             const originalUri = occurUriToOrigUriMap.get(doc.uri.toString());
