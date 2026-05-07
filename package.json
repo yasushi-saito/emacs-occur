@@ -25,12 +25,22 @@
         "command": "emacs-occur.jump",
         "title": "Jump to Occur Match",
         "category": "Emacs Occur"
+      },
+      {
+        "command": "emacs-occur.quit",
+        "title": "Quit Occur",
+        "category": "Emacs Occur"
       }
     ],
     "keybindings": [
       {
         "command": "emacs-occur.jump",
         "key": "enter",
+        "when": "emacs-occur.active"
+      },
+      {
+        "command": "emacs-occur.quit",
+        "key": "q",
         "when": "emacs-occur.active"
       }
     ]

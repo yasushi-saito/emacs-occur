@@ -4,7 +4,7 @@ import { getOccurResults } from './occur';
 
 let resultsMap = new Map<string, string>();
 
-// Maps the URI of the occur buffer (`occur://<fspath>/*tmp-occur*`) to 
+// Maps the URI of the occur buffer (`occur://<fspath>/*tmp-occur*`) to
 // the URI of the original file.
 let occurUriToOrigUriMap = new Map<string, vscode.Uri>();
 
@@ -91,14 +91,6 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(jumpCmd);
 
-    context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(editor => {
-        if (editor && editor.document.uri.scheme === 'occur') {
-            vscode.commands.executeCommand('setContext', 'emacs-occur.active', true);
-        } else {
-            vscode.commands.executeCommand('setContext', 'emacs-occur.active', false);
-        }
-    }));
-
     context.subscriptions.push(vscode.workspace.onDidCloseTextDocument((document: vscode.TextDocument) => {
         const uriString = document.uri.toString();
         const urisToDelete: string[] = [uriString];
@@ -109,13 +101,36 @@ export function activate(context: vscode.ExtensionContext) {
           if (val.toString() == uriString) {
             urisToDelete.push(key);
           }
-        }        
+        }
 
         for (const key of urisToDelete) {
           resultsMap.delete(key);
           occurUriToOrigUriMap.delete(key);
         }
     }));
+
+    let quitCmd = vscode.commands.registerCommand('emacs-occur.quit', async () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) return;
+
+        const doc = editor.document;
+        if (doc.uri.scheme !== 'occur') return;
+
+        await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+        updateOccurContext(vscode.window.activeTextEditor);
+    });
+
+    context.subscriptions.push(quitCmd);
+
+    const updateOccurContext = (editor: vscode.TextEditor | undefined) => {
+        if (editor && editor.document.uri.scheme === 'occur') {
+            vscode.commands.executeCommand('setContext', 'emacs-occur.active', true);
+        } else {
+            vscode.commands.executeCommand('setContext', 'emacs-occur.active', false);
+        }
+    }));
+
+    context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(updateOccurContext));
 }
 
 class OccurContentProvider implements vscode.TextDocumentContentProvider {
