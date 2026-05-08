@@ -87,7 +87,7 @@ export function activate(context: vscode.ExtensionContext) {
 
         const content = results.join('\n');
         occurDataMap.set(occurUri.toString(), {
-            content,
+            content: content,
             originalUri: originalUri,
             searchText: searchText,
             decorationType: decorationType,
