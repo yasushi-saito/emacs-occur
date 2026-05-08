@@ -17,22 +17,6 @@ interface OccurData {
  */
 let occurDataMap = new Map<string, OccurData>();
 
-function buildOccurHighlightRanges(content: string, searchText: string): vscode.Range[] {
-    const ranges: vscode.Range[] = [];
-    const lines = content.split(/\r?\n/);
-    for (let line = 0; line < lines.length; line++) {
-        const text = lines[line];
-        const prefixMatch = text.match(/^\s*\d+:\s*/);
-        const prefixLength = prefixMatch ? prefixMatch[0].length : 0;
-        let index = text.indexOf(searchText, prefixLength);
-        while (index !== -1) {
-            ranges.push(new vscode.Range(line, index, line, index + searchText.length));
-            index = text.indexOf(searchText, index + searchText.length);
-        }
-    }
-    return ranges;
-}
-
 function setOccurDecorations(editor: vscode.TextEditor | undefined) {
     if (!editor || editor.document.uri.scheme !== 'occur') {
         return;
@@ -66,9 +50,9 @@ export function activate(context: vscode.ExtensionContext) {
         }
 
         const doc = editor.document;
-        const results = getOccurResults(doc.getText(), searchText);
+        const occurResult = getOccurResults(doc, searchText);
 
-        if (results.length === 0) {
+        if (occurResult.matchRanges.length === 0) {
             vscode.window.showInformationMessage('No matches found');
             return;
         }
@@ -85,13 +69,12 @@ export function activate(context: vscode.ExtensionContext) {
             throw new Error("No buffer found");
         }
 
-        const content = results.join('\n');
         occurDataMap.set(occurUri.toString(), {
-            content: content,
+            content: occurResult.matchText,
             originalUri: originalUri,
             searchText: searchText,
             decorationType: decorationType,
-            ranges: buildOccurHighlightRanges(content, searchText)
+            ranges: occurResult.matchRanges
         });
         provider.update(occurUri);
 
