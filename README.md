@@ -1,16 +1,17 @@
 ## Emacs-occur
 
-VSCode extension for emulating Emacs "occur" command.
+VSCode extension for emulating the Emacs "occur" command.
 
-Usage:
+## Usage:
 
-  From command palette, invoke `emacs-occur.occurtext` or `Emacs Occur`.
+From the command palette, invoke `emacs-occur.occurRegex` or `Occur Regex`. It
+will ask for a regex in a dialog. It then creates a new editor (buffer) named
+`*occur-{basename}*`, with a line for each match.
 
-In the occur buffer:
+In the occur editor you can use the following commands:
 
- - `Enter` jumps to the matched line.
- - `q` closes the buffer.
-
+- `Enter` jumps to the matched line.
+- `q` closes the buffer.
 
 ## Building and installing
 
